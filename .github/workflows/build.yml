@@ -20,8 +20,8 @@ jobs:
             args: --linux
     runs-on: ${{ matrix.os }}
     env:
-      # macOS builds are unsigned for now (no Developer ID certificate)
-      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      # macOS: sign with the Developer ID certificate and notarize on release tags when the secrets exist
+      SIGN_MAC: ${{ matrix.os == 'macos-latest' && startsWith(github.ref, 'refs/tags/v') && secrets.MAC_CSC_LINK != '' && secrets.APPLE_API_KEY_BASE64 != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -39,7 +39,38 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo apt-get update -qq && sudo apt-get install -y -qq rpm >/dev/null
 
-      - run: npx electron-builder ${{ matrix.args }} --publish never
+      # notarytool reads the App Store Connect API key from a file: write it for the duration of the job
+      - name: Prepare notarization key
+        if: env.SIGN_MAC == 'true'
+        run: |
+          echo "$APPLE_API_KEY_BASE64" | base64 --decode > "$RUNNER_TEMP/AuthKey.p8"
+          echo "APPLE_API_KEY=$RUNNER_TEMP/AuthKey.p8" >> "$GITHUB_ENV"
+        env:
+          APPLE_API_KEY_BASE64: ${{ secrets.APPLE_API_KEY_BASE64 }}
+
+      - run: npx electron-builder ${{ matrix.args }} --publish never ${{ env.SIGN_MAC == 'true' && '-c.mac.notarize=true' || '' }}
+        env:
+          # Without the secrets (forks, manual runs, Linux) nothing is signed
+          CSC_IDENTITY_AUTO_DISCOVERY: ${{ env.SIGN_MAC == 'true' && 'true' || 'false' }}
+          CSC_LINK: ${{ env.SIGN_MAC == 'true' && secrets.MAC_CSC_LINK || '' }}
+          CSC_KEY_PASSWORD: ${{ env.SIGN_MAC == 'true' && secrets.MAC_CSC_KEY_PASSWORD || '' }}
+          APPLE_API_KEY_ID: ${{ env.SIGN_MAC == 'true' && secrets.APPLE_API_KEY_ID || '' }}
+          APPLE_API_ISSUER: ${{ env.SIGN_MAC == 'true' && secrets.APPLE_API_ISSUER || '' }}
+
+      - name: Verify macOS signatures and notarization
+        if: env.SIGN_MAC == 'true'
+        run: |
+          for app in dist/mac*/Bucketeer.app; do
+            echo "== $app"
+            codesign --verify --deep --strict --verbose=2 "$app"
+            spctl --assess --type execute --verbose=4 "$app" 2>&1 | tee /tmp/spctl.txt
+            grep -q "source=Notarized Developer ID" /tmp/spctl.txt
+            xcrun stapler validate "$app"
+          done
+
+      - name: Remove the notarization key
+        if: always() && env.SIGN_MAC == 'true'
+        run: rm -f "$RUNNER_TEMP/AuthKey.p8"
 
       - uses: actions/upload-artifact@v4
         with:

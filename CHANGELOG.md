@@ -22,3 +22,4 @@ First public release (0.1.0).
 - Splash screen, light/dark appearance, packages for macOS (dmg, zip), Windows (installer, portable)
   and Linux (AppImage, deb, rpm).
 - Windows executables are code-signed with a Certum open source certificate and timestamped.
+- macOS apps are signed with a Developer ID certificate (hardened runtime) and notarized by Apple.

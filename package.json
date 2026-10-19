@@ -52,7 +52,8 @@
             "arm64"
           ]
         }
-      ]
+      ],
+      "hardenedRuntime": true
     },
     "win": {
       "target": [
