@@ -45,7 +45,7 @@ npm run typecheck    # tsc for node (main/preload/shared) and web (renderer) con
 npm run build        # bundle to out/
 npm run dist:mac     # dmg + zip, x64 and arm64 (dist:mac:arm = Apple Silicon only)
 npm run dist:win     # NSIS installer (x64+arm64) + portable exe
-npm run dist:linux   # AppImage (x64+arm64) + deb
+npm run dist:linux   # AppImage (x64+arm64) + deb + rpm
 ```
 
 No test runner. Main-process modules can be run from Node with a loader that stubs `electron`
@@ -87,8 +87,12 @@ build/           icon.svg (source) → icon.png used by electron-builder; splash
 
 ## CI
 
-- `.github/workflows/ci.yml`: typecheck, build and `npm audit --omit=dev` on pushes and PRs.
-- `.github/workflows/build.yml`: macOS, Windows and Linux packages on GitHub-hosted runners for tags
-  `v*` and manual runs; tags create a draft release. Windows signing with the maintainer's Certum
-  cloud certificate (`build/sign-win.js`, secrets `CERTUM_USERNAME` / `CERTUM_TOTP_SECRET`); third-party
-  actions receiving secrets are pinned to a reviewed commit SHA. macOS builds are unsigned.
+- GitHub Actions (`.github/workflows/build.yml`): macOS and Linux packages on their runners, Windows
+  packages built and signed on Linux (`build-windows` job on ubuntu-latest, no container: ssign needs
+  Ubuntu 24.04's glibc), for
+  tags `v*` and manual runs; tags create a draft release (pre-release for `-rc` tags).
+- Windows signing: Certum cloud certificate through ssign (Certum cloud API, no SimplySign Desktop)
+  on release tags (`build/sign-win.js`, secrets `CERTUM_USERNAME` / `CERTUM_TOTP_SECRET` in Base32,
+  see docs/building.md). Third-party tools that receive secrets are pinned (release + SHA-256 or
+  commit SHA) after review. SimplySign Desktop on GitHub's Windows runner does not work: its virtual
+  smart card reader never registers. macOS builds are unsigned.

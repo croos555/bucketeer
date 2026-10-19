@@ -42,7 +42,7 @@ Download the package for your system from the [releases](https://github.com/croo
 |---|---|
 | macOS (Apple Silicon / Intel) | `Bucketeer-<version>-arm64.dmg` / `-x64.dmg` |
 | Windows | `Bucketeer Setup <version>.exe` (installer) or `Bucketeer-<version>-portable.exe` |
-| Linux | `Bucketeer-<version>.AppImage` or `bucketeer_<version>_amd64.deb` |
+| Linux | `Bucketeer-<version>.AppImage`, `bucketeer_<version>_amd64.deb` or `bucketeer-<version>.x86_64.rpm` |
 
 Windows releases are code-signed (Certum); SmartScreen may still warn until the app builds up
 reputation. macOS builds are not signed yet: use right-click → *Open* the first time.

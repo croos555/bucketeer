@@ -16,16 +16,12 @@ jobs:
         include:
           - os: macos-latest
             args: --mac --x64 --arm64
-          - os: windows-latest
-            args: --win
           - os: ubuntu-latest
             args: --linux
     runs-on: ${{ matrix.os }}
     env:
       # macOS builds are unsigned for now (no Developer ID certificate)
       CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-      # Windows: sign with the Certum cloud certificate on release tags when the secrets exist
-      SIGN_WINDOWS: ${{ matrix.os == 'windows-latest' && startsWith(github.ref, 'refs/tags/v') && secrets.CERTUM_TOTP_SECRET != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -38,33 +34,12 @@ jobs:
       - run: npm run typecheck
       - run: npx electron-vite build
 
-      # Logs SimplySign Desktop in (TOTP) so the certificate is usable by signtool.
-      # Pinned to a reviewed commit: it receives the signing credentials.
-      - name: Set up Certum code signing
-        id: certum
-        if: env.SIGN_WINDOWS == 'true'
-        uses: jay0lee/certum-cloud-code-sign@a3324503499c49090869856eeeecfe95fb613d87 # v1
-        with:
-          username: ${{ secrets.CERTUM_USERNAME }}
-          totp_secret: ${{ secrets.CERTUM_TOTP_SECRET }}
+      # electron-builder needs rpmbuild for the .rpm package
+      - name: Install rpm tooling
+        if: runner.os == 'Linux'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq rpm >/dev/null
 
-      # build/sign-win.js signs every exe (app, installer, uninstaller, portable) when CERTUM_THUMBPRINT is set
       - run: npx electron-builder ${{ matrix.args }} --publish never
-        env:
-          CERTUM_THUMBPRINT: ${{ steps.certum.outputs.cert-thumbprint }}
-          SIGNTOOL_PATH: ${{ steps.certum.outputs.signtool-path }}
-
-      - name: Verify Windows signatures
-        if: env.SIGN_WINDOWS == 'true'
-        shell: pwsh
-        run: |
-          $files = Get-ChildItem dist -Filter *.exe
-          foreach ($f in $files) { & "${{ steps.certum.outputs.signtool-path }}" verify /pa /tw $f.FullName; if ($LASTEXITCODE) { exit 1 } }
-          & "${{ steps.certum.outputs.signtool-path }}" verify /pa dist/win-unpacked/Bucketeer.exe; if ($LASTEXITCODE) { exit 1 }
-
-      - name: Close the SimplySign session
-        if: always() && steps.certum.outcome != 'skipped'
-        uses: jay0lee/certum-cloud-code-sign/teardown@a3324503499c49090869856eeeecfe95fb613d87 # v1
 
       - uses: actions/upload-artifact@v4
         with:
@@ -72,13 +47,72 @@ jobs:
           path: |
             dist/*.dmg
             dist/*.zip
-            dist/*.exe
             dist/*.AppImage
             dist/*.deb
+            dist/*.rpm
+          if-no-files-found: error
+
+  # Windows packages are built and signed on Linux: Wine runs the NSIS uninstaller stub, ssign signs.
+  # Runs on the host: ssign's Linux binary needs the glibc of Ubuntu 24.04.
+  build-windows:
+    runs-on: ubuntu-latest
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      # Sign with the Certum cloud certificate on release tags when the secrets exist
+      SIGN_WINDOWS: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.CERTUM_TOTP_SECRET != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npx electron-vite build
+
+      # electron-builder runs the 32-bit NSIS stub under Wine to produce the uninstaller
+      - name: Install Wine
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-get update -qq
+          # 'wine' provides the wine command electron-builder calls; wine32 runs the 32-bit NSIS stub
+          sudo apt-get install -y -qq --no-install-recommends wine wine64 wine32:i386 >/dev/null
+          wine --version
+
+      # ssign signs through Certum's cloud API over HTTPS. Pinned release, checksum verified.
+      - name: Install ssign and osslsigncode
+        if: env.SIGN_WINDOWS == 'true'
+        run: |
+          curl -fsSL -o /tmp/ssign.tar.gz https://github.com/Le-Syl21/ssign/releases/download/v0.1.8/ssign-linux-x86_64.tar.gz
+          echo "fc38f083ea1f061a097a3a9c5dc1a056c9c7310a47e40f56a8976895ec5a928d  /tmp/ssign.tar.gz" | sha256sum -c -
+          sudo tar xzf /tmp/ssign.tar.gz -C /usr/local/bin ssign
+          sudo apt-get update -qq && sudo apt-get install -y -qq osslsigncode >/dev/null
+
+      # build/sign-win.js signs every exe (app, installer, uninstaller, portable) when the Certum secrets are set
+      - run: npx electron-builder --win --publish never
+        env:
+          CERTUM_EMAIL: ${{ env.SIGN_WINDOWS == 'true' && secrets.CERTUM_USERNAME || '' }}
+          CERTUM_OTP: ${{ env.SIGN_WINDOWS == 'true' && secrets.CERTUM_TOTP_SECRET || '' }}
+
+      - name: Verify Windows signatures
+        if: env.SIGN_WINDOWS == 'true'
+        run: |
+          for f in dist/*.exe dist/win-unpacked/Bucketeer.exe; do
+            echo "== $f"
+            osslsigncode verify -in "$f" -CAfile /etc/ssl/certs/ca-certificates.crt | tee /tmp/verify.txt
+            grep -q "Signature verification: ok" /tmp/verify.txt
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bucketeer-Windows
+          path: dist/*.exe
           if-no-files-found: error
 
   release:
-    needs: build
+    needs: [build, build-windows]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
@@ -90,4 +124,6 @@ jobs:
         with:
           files: artifacts/*
           draft: true
+          # v1.2.3-rc.1 and similar are published as pre-releases
+          prerelease: ${{ contains(github.ref_name, '-') }}
           generate_release_notes: true

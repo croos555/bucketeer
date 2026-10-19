@@ -19,4 +19,6 @@ First public release (0.1.0).
 - Public URL of every object (endpoint-derived or custom base), make public / private with a
   reachability check, "new uploads are public" option, signed links with an expiry, `s3://` URIs.
 - Object details with metadata and image preview.
-- Splash screen, light/dark appearance, packages for macOS, Windows and Linux.
+- Splash screen, light/dark appearance, packages for macOS (dmg, zip), Windows (installer, portable)
+  and Linux (AppImage, deb, rpm).
+- Windows executables are code-signed with a Certum open source certificate and timestamped.
