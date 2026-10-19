@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#14707a"/>
+      <stop offset="1" stop-color="#08313a"/>
+    </linearGradient>
+    <linearGradient id="pail" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#d4e6ea"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- macOS icon grid: 824px squircle inset 100px -->
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#bg)"/>
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="none" stroke="#ffffff" stroke-opacity="0.08" stroke-width="4"/>
+
+  <!-- handle -->
+  <path d="M 318 420 C 318 200, 706 200, 706 420" fill="none" stroke="#bcd6dc" stroke-width="26" stroke-linecap="round"/>
+
+  <g filter="url(#shadow)">
+    <!-- bucket body: tapered, rounded bottom -->
+    <path fill="url(#pail)" d="M 290 400 L 734 400 L 676 742 Q 670 772 640 772 L 384 772 Q 354 772 348 742 Z"/>
+    <!-- rim -->
+    <rect x="270" y="372" width="484" height="62" rx="31" fill="#ffffff"/>
+  </g>
+  <!-- band -->
+  <path d="M 302 470 L 722 470 L 714 518 L 310 518 Z" fill="#f29a2e"/>
+
+  <!-- transfer arrows -->
+  <g stroke="#0d4f5a" stroke-width="30" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M 450 708 L 450 572"/>
+    <path d="M 404 618 L 450 572 L 496 618"/>
+    <path d="M 574 572 L 574 708"/>
+    <path d="M 528 662 L 574 708 L 620 662"/>
+  </g>
+</svg>
