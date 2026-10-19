@@ -1,6 +1,6 @@
 {
   "name": "bucketeer",
-  "version": "0.1.0-rc.3",
+  "version": "0.1.0",
   "description": "Local-first desktop browser for S3-compatible storage (OVHcloud, AWS S3, Scaleway, Wasabi, R2, MinIO): dual-pane transfers, public and signed links. No account, no cloud.",
   "main": "./out/main/index.js",
   "author": "Christophe Roos",

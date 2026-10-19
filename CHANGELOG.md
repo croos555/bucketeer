@@ -5,7 +5,9 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
-First public release (0.1.0).
+## [0.1.0] — 2026-10-19
+
+First public release.
 
 ### Added
 - Connections with provider presets and regions (OVHcloud, AWS S3, Scaleway, Wasabi, Cloudflare R2,
