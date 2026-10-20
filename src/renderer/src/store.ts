@@ -101,7 +101,5 @@ window.api.vault.onChanged(() => useStore.getState().load())
 window.api.transfer.onProgress((t) => useStore.setState((s) => ({ transfers: { ...s.transfers, [t.transferId]: t } })))
 
 export function errMsg(err: unknown): string {
-  const m = err instanceof Error ? err.message : String(err)
-  // Strip Electron's "Error invoking remote method 'x': Error: " prefix
-  return m.replace(/^Error invoking remote method '[^']+': (Error: )?/, '')
+  return err instanceof Error ? err.message : String(err)
 }

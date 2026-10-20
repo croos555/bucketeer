@@ -1,13 +1,13 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Bucketeer",
-  "version": "0.1.0",
+  "version": "../package.json",
   "identifier": "dev.bucketeer.app",
   "build": {
-    "frontendDist": "../out/tauri",
+    "frontendDist": "../out/renderer",
     "devUrl": "http://localhost:5175",
-    "beforeDevCommand": "npm run tauri:web",
-    "beforeBuildCommand": "npm run tauri:web:build"
+    "beforeDevCommand": "npm run dev:web",
+    "beforeBuildCommand": "npm run build"
   },
   "app": {
     "windows": [
@@ -47,6 +47,8 @@
     ],
     "category": "DeveloperTool",
     "shortDescription": "Local-first browser for S3-compatible object storage",
-    "copyright": "Christophe Roos — MIT"
+    "copyright": "Christophe Roos — MIT",
+    "publisher": "Christophe Roos",
+    "homepage": "https://github.com/croos555/bucketeer"
   }
 }

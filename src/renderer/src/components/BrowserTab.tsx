@@ -262,7 +262,7 @@ function Pane(props: PaneProps) {
   const [infoKey, setInfoKey] = useState<string | null>(null)
   const { menu, open, close } = useMenu()
 
-  // Tauri build: files dropped from the OS arrive as an "os-file-drop" event (see tauri-api.ts);
+  // Files dropped from the OS arrive as an "os-file-drop" event (see api.ts);
   // a folder row or breadcrumb under the cursor is the destination
   const paneRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -575,12 +575,8 @@ function Pane(props: PaneProps) {
     if (internal) {
       const { pane, paths } = JSON.parse(internal)
       if (pane !== index) props.onReceive(paths, dest)
-      return
     }
-    if (loc?.kind === 's3' && e.dataTransfer.files.length) {
-      const paths = Array.from(e.dataTransfer.files).map((f) => window.api.local.pathForFile(f)).filter(Boolean)
-      if (paths.length) props.onExternal(paths, dest)
-    }
+    // Files from the OS arrive as "os-file-drop" events (see api.ts): a webview's File objects carry no path
   }
 
   // ---------- render ----------

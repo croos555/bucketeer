@@ -20,97 +20,88 @@ the standards expected of a well-run open source repository:
 - **Versioning**: [Semantic Versioning](https://semver.org/); `package.json` version, `CHANGELOG.md`
   ([Keep a Changelog](https://keepachangelog.com/), user-visible changes under *Unreleased*) and the
   `vX.Y.Z` tag must agree. Releases are cut by pushing an annotated tag; CI drafts the GitHub release.
-- **Quality gates**: `npm run typecheck` and `npm run build` must pass before pushing; the CI workflow
-  checks every push and pull request. Keep `npm audit --omit=dev` clean and dependencies
-  MIT-compatible (AWS SDK is Apache-2.0, fine).
+- **Quality gates**: `npm run typecheck`, `npm run build` and `cargo clippy --all-targets -- -D warnings`
+  (in `src-tauri/`) must pass before pushing; the CI workflow checks every push and pull request.
+  Keep `npm audit --omit=dev` clean and dependencies MIT-compatible (Tauri and the AWS SDK are
+  Apache-2.0/MIT, fine).
 - **Docs in sync**: README, `docs/`, CHANGELOG and this file are updated in the same commit as the
   behavior they describe. User-facing text is in English.
 - **Community files** stay current: LICENSE, CONTRIBUTING, CODE_OF_CONDUCT, SECURITY (private
   vulnerability reporting), issue and PR templates.
-- **Security**: secrets encrypted at rest, no telemetry, renderer isolation kept intact; anything
+- **Security**: secrets encrypted at rest, no telemetry, minimal Tauri capabilities; anything
   touching credentials, public access or deletion is reviewed with extra care and documented in
   `docs/security.md`.
 
 ## Stack
 
-Electron + electron-vite, React 19 + TypeScript, zustand, AWS SDK for JavaScript v3
-(`@aws-sdk/client-s3`, `lib-storage`, `s3-request-presigner`), `mime-types`, lucide-react.
-**No native modules**: keep it that way so every platform builds from one machine.
+Tauri 2 (Rust backend in `src-tauri/`, system web view), React 19 + TypeScript + Vite, zustand,
+lucide-react. Rust crates: aws-sdk-s3 (behavior-version-latest), keyring (vault key in the OS
+keychain), aes-gcm, reqwest (rustls), trash, mime_guess, tokio; Tauri plugins dialog, opener,
+clipboard-manager. Migrated from Electron after 0.1.0 (the Electron code lives in git history).
 
 ## Commands
 
 ```bash
-npm run dev          # electron-vite dev (hot reload renderer, restarts the app on main changes)
-npm run typecheck    # tsc for node (main/preload/shared) and web (renderer) configs
-npm run build        # bundle to out/
-npm run dist:mac     # dmg + zip, x64 and arm64 (dist:mac:arm = Apple Silicon only)
-npm run dist:win     # NSIS installer (x64+arm64) + portable exe
-npm run dist:linux   # AppImage (x64+arm64) + deb + rpm
+npm run dev          # tauri dev (Vite on :5175 + Rust backend, rebuilt on change)
+npm run typecheck    # tsc for vite.config.ts and the renderer
+npm run build        # renderer only, to out/renderer (embedded by the Rust build)
+npm run dist         # tauri build: packages for the current system
+cd src-tauri && cargo clippy --all-targets -- -D warnings && cargo test
+cd src-tauri && cargo test -- --ignored --test-threads=1   # S3 end-to-end test, needs SeaweedFS on 127.0.0.1:8333
 ```
 
-No test runner. Main-process modules can be run from Node with a loader that stubs `electron`
-(see docs/development.md); use `import type` for type-only imports and no TS parameter properties.
-Test S3 behavior against a local SeaweedFS (`chrislusf/seaweedfs server -s3`): the `minio/minio`
-image is no longer published on Docker Hub.
+Rust lives in `~/.cargo/bin` (not always on PATH). Some shells rewrite `npx`/`cargo` (token-saving
+hooks); in scripts prefer `./node_modules/.bin/<tool>` or the proxy. Test S3 behavior against a local
+SeaweedFS (`chrislusf/seaweedfs server -s3`): the `minio/minio` image is no longer on Docker Hub.
 
 ## Layout
 
 ```
-src/shared/      types.ts (vault model, settings, IPC payloads), providers.ts (presets), urls.ts (public URL, s3://)
-src/main/        index.ts (window, IPC, lifecycle), store.ts (vault + safeStorage), s3.ts (client cache,
-                 operations, errors, ACLs, presign), transfers.ts (upload/download/copy, progress, cancel),
-                 splash.ts
-src/preload/     contextBridge API (`window.api`), typed in index.d.ts
-src/renderer/src App.tsx, store.ts (zustand), views/ (Connections, Settings),
-                 components/ (BrowserTab: dual pane + bucket list + transfers, ObjectInfoPanel,
-                 ConnectionEditor, icons, ui primitives)
-build/           icon.svg (source) → icon.png used by electron-builder; splash reuses the SVG
+src/shared/       types.ts (vault model, settings, command payloads), providers.ts (presets), urls.ts (public URL, s3://)
+src/renderer/src  api.ts (window.api over Tauri invoke/listen, OS file drops → "os-file-drop" event),
+                  App.tsx, store.ts (zustand), views/ (Connections, Settings), components/ (BrowserTab:
+                  dual pane + bucket list + transfers, ObjectInfoPanel, ConnectionEditor, icons, ui)
+src-tauri/src/    lib.rs (plugins, commands), store.rs (vault), secrets.rs (AES-256-GCM, key in keychain),
+                  s3.rs (client cache, operations, errors, ACLs, presign), transfers.rs (upload/download/copy,
+                  progress, cancel), local.rs (local files), util.rs (emit, Error, bail!), s3_tests.rs
+src-tauri/        tauri.conf.json (+ tauri.windows.conf.json), capabilities/, icons/
+build/            icon.svg (source) → icon.png → src-tauri/icons; sign-win.js (Windows signCommand, CI only)
 ```
 
 ## Rules and gotchas
 
-- Vault = `~/Library/Application Support/bucketeer/vault.json` (Windows `%APPDATA%\bucketeer`, Linux
-  `~/.config/bucketeer`). Collections: groups, connections, bookmarks + settings. `secretAccessKey`
-  is encrypted (`SECRET_FIELDS`). New settings need a default in `DEFAULT_SETTINGS`.
-- `S3Client`s are cached per connection and rebuilt when the connection changes (`store.onConnectionChange`).
-- Non-AWS providers: `requestChecksumCalculation` / `responseChecksumValidation` = `WHEN_REQUIRED`
+- Vault = `vault.json` in Tauri's app data dir (`~/Library/Application Support/dev.bucketeer.app`,
+  `%APPDATA%\dev.bucketeer.app`, `~/.local/share/dev.bucketeer.app`). Collections: groups, connections,
+  bookmarks + settings. `secretAccessKey` is encrypted (`secret_fields`). New settings need a default
+  in `default_settings`. The Electron 0.1.0 vault (`<config>/bucketeer/vault.json`, `enc:v1:` secrets
+  from "Bucketeer Safe Storage") is imported once; keep that path working.
+- S3 clients are cached per connection and dropped when the connection changes (`s3::forget_client`).
+- Non-AWS providers: `RequestChecksumCalculation` / `ResponseChecksumValidation` = `WhenRequired`
   (the SDK's default CRC32 checksums break many S3-compatible stores). Uploads pass `ContentLength`
-  so small files are plain PUTs, not chunked streams.
+  so small files are plain PUTs; failed multipart uploads are aborted.
 - Folders are prefixes; a "folder marker" object `prefix/` may or may not exist. Never assume it does
   (renames/copies must not copy a missing marker).
 - Never trust the server to refuse destructive operations: bucket deletion checks emptiness first.
-- Renderer ↔ main only through `window.api` (contextIsolation on, no nodeIntegration). Add a
-  channel = handler in main + entry in `src/preload/index.ts`.
-- `npm run dev` restarts the app on main-process changes; warn before editing `src/main` while
-  someone is testing in dev mode. Use `--user-data-dir=<scratch>` for a separate test instance.
-- Some shells rewrite `npx` (token-saving hooks); in scripts prefer `./node_modules/.bin/<tool>`.
+- Renderer ↔ backend only through `window.api` (`api.ts`). Add a call = `#[tauri::command]` +
+  registration in `lib.rs` + typed wrapper in `api.ts` (snake_case command, camelCase args). New
+  plugin permissions go in `capabilities/default.json`; keep them minimal.
+- OS file drops: Tauri drag-drop events, dispatched to the element under the cursor as `os-file-drop`
+  (`data-dir-path` marks folder targets). Disabled on Windows (`tauri.windows.conf.json`) so HTML5
+  drag & drop between panes keeps working there.
+- `tauri.conf.json` reads its version from `package.json`; bump `src-tauri/Cargo.toml` with it.
 
 ## CI
 
-- GitHub Actions (`.github/workflows/build.yml`): macOS and Linux packages on their runners, Windows
-  packages built and signed on Linux (`build-windows` job on ubuntu-latest, no container: ssign needs
-  Ubuntu 24.04's glibc), for
-  tags `v*` and manual runs; tags create a draft release (pre-release for `-rc` tags).
-- Windows signing: Certum cloud certificate through ssign (Certum cloud API, no SimplySign Desktop)
-  on release tags (`build/sign-win.js`, secrets `CERTUM_USERNAME` / `CERTUM_TOTP_SECRET` in Base32,
-  see docs/building.md). Third-party tools that receive secrets are pinned (release + SHA-256 or
-  commit SHA) after review. SimplySign Desktop on GitHub's Windows runner does not work: its virtual
-  smart card reader never registers.
-- macOS signing: Developer ID Application certificate + notarization with an App Store Connect API
-  key on release tags (secrets `MAC_CSC_LINK`, `MAC_CSC_KEY_PASSWORD`, `APPLE_API_KEY_BASE64`,
-  `APPLE_API_KEY_ID`, `APPLE_API_ISSUER`); `mac.hardenedRuntime` is on, notarization is enabled from
-  the workflow with `-c.mac.notarize=true`.
-
-## Tauri build (branch `tauri`, work in progress)
-
-A Tauri 2 build sits next to the Electron one, sharing the renderer:
-- `src-tauri/`: Rust backend. `store.rs` (vault, imports the Electron vault once), `secrets.rs` (AES-256-GCM
-  with a key in the OS keychain), `s3.rs` (aws-sdk-s3, same checksum rule and error messages as the
-  TypeScript version), `transfers.rs` (multipart uploads, streamed downloads/copies, cancel), `local.rs`.
-- `src/renderer/src/tauri-api.ts` implements `window.api` over Tauri commands (Electron channel names
-  in snake_case) and turns OS file drops into an `os-file-drop` DOM event; `main-tauri.tsx` is the entry,
-  `vite.tauri.config.ts` the web build. On Windows OS drops are off (`tauri.windows.conf.json`) to keep
-  HTML5 drag & drop between panes.
-- `npm run tauri:dev`, `npm run tauri:build`. Rust lives in `~/.cargo/bin` (not always on PATH).
-- `cargo test -- --ignored --test-threads=1` in `src-tauri/` runs `s3_tests.rs` against a local
-  SeaweedFS on 127.0.0.1:8333.
+- GitHub Actions (`.github/workflows/build.yml`), tags `v*` and manual runs: `build-macos` (aarch64 +
+  x86_64 dmg), `build-windows` (windows-latest, NSIS + portable exe, x64 + arm64), `build-linux`
+  (ubuntu-22.04 and -arm: AppImage, deb, rpm); tags create a draft release (pre-release for `-rc`).
+- Windows signing: Certum cloud certificate through ssign's Windows binary (pinned v0.1.8 + SHA-256)
+  on release tags; the job passes `bundle.windows.signCommand` = `node build/sign-win.js %1` with
+  `tauri build --config`. Secrets `CERTUM_USERNAME` / `CERTUM_TOTP_SECRET` (Base32), see
+  docs/building.md. Third-party tools and actions that receive secrets are pinned (release + SHA-256
+  or commit SHA) after review. SimplySign Desktop on GitHub's Windows runner does not work.
+- macOS signing: Developer ID Application certificate imported into a job keychain (Tauri's and
+  electron-builder's own temporary keychains are avoided), `APPLE_SIGNING_IDENTITY` from
+  `find-identity`; notarization by Tauri with `APPLE_API_KEY` (= secret `APPLE_API_KEY_ID`),
+  `APPLE_API_ISSUER`, `APPLE_API_KEY_PATH` (from `APPLE_API_KEY_BASE64`). Secrets `MAC_CSC_LINK`,
+  `MAC_CSC_KEY_PASSWORD` hold the .p12.

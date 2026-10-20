@@ -40,9 +40,12 @@ Download the package for your system from the [releases](https://github.com/croo
 
 | System | File |
 |---|---|
-| macOS (Apple Silicon / Intel) | `Bucketeer-<version>-arm64.dmg` / `-x64.dmg` |
-| Windows | `Bucketeer Setup <version>.exe` (installer) or `Bucketeer-<version>-portable.exe` |
-| Linux | `Bucketeer-<version>.AppImage`, `bucketeer_<version>_amd64.deb` or `bucketeer-<version>.x86_64.rpm` |
+| macOS (Apple Silicon / Intel) | `Bucketeer_<version>_aarch64.dmg` / `_x64.dmg` |
+| Windows (x64 / ARM64) | `Bucketeer_<version>_x64-setup.exe` (installer) or `Bucketeer_<version>_x64-portable.exe` |
+| Linux (x64 / ARM64) | `Bucketeer_<version>_amd64.AppImage`, `Bucketeer_<version>_amd64.deb` or `Bucketeer-<version>-1.x86_64.rpm` |
+
+Built with [Tauri](https://tauri.app): the app uses the system web view (WebView2 on Windows,
+WebKitGTK on Linux) and weighs about 10 MB.
 
 macOS releases are signed with a Developer ID and notarized by Apple. Windows releases are
 code-signed (Certum); SmartScreen may still warn until the app builds up reputation.
@@ -62,15 +65,16 @@ git clone https://github.com/croos555/bucketeer.git
 cd bucketeer
 npm install
 npm run dev          # run in development mode
-npm run dist:mac     # or dist:win / dist:linux
+npm run dist         # packages for the current system
 ```
 
-Requires Node.js 22.12 or later. See [Building & releasing](docs/building.md) for details.
+Requires Node.js 22.12 or later, Rust (stable, via [rustup](https://rustup.rs)) and the
+[Tauri prerequisites](https://tauri.app/start/prerequisites/) of your system. See [Building & releasing](docs/building.md) for details.
 
 ## License
 
 [MIT](LICENSE) © Christophe Roos. Bundled dependencies keep their own licenses (MIT, Apache-2.0 for
-the AWS SDK, BSD, ISC).
+Tauri and the AWS SDK, BSD, ISC).
 
 Bucketeer is an independent project and is not affiliated with OVHcloud, Amazon Web Services,
 Scaleway, Wasabi, Cloudflare or MinIO.

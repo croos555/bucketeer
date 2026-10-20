@@ -68,5 +68,7 @@ parallelism, and whether the app keeps running when its window is closed.
 
 ## Where data is stored
 
-`vault.json` in the application data folder: `~/Library/Application Support/bucketeer` (macOS),
-`%APPDATA%\bucketeer` (Windows), `~/.config/bucketeer` (Linux).
+`vault.json` in the application data folder: `~/Library/Application Support/dev.bucketeer.app` (macOS),
+`%APPDATA%\dev.bucketeer.app` (Windows), `~/.local/share/dev.bucketeer.app` (Linux). The key that
+encrypts the secret keys is in the OS keychain (item *dev.bucketeer.app*). On first start, a vault
+left by Bucketeer 0.1.0 (`bucketeer` folder) is imported once.

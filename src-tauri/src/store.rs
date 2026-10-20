@@ -71,7 +71,7 @@ pub fn store() -> MutexGuard<'static, Store> {
     STORE.lock().unwrap_or_else(|e| e.into_inner())
 }
 
-// Vault of the Electron build, imported once when this build starts without a vault of its own
+// Vault of the Electron builds (0.1.0), imported once when this build starts without a vault of its own
 fn electron_vault() -> Option<PathBuf> {
     let p = dirs::config_dir()?.join("bucketeer").join("vault.json");
     p.exists().then_some(p)

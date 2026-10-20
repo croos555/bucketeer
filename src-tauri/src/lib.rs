@@ -1,5 +1,5 @@
-// Bucketeer, Tauri build: Rust backend behind the same renderer as the Electron build.
-// Command and event names mirror the Electron IPC channels (see src/renderer/src/tauri-api.ts).
+// Bucketeer: Rust backend (vault, S3, transfers, local files) behind the React renderer.
+// Commands and events used by window.api (src/renderer/src/api.ts).
 
 mod local;
 mod s3;

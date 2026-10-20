@@ -2,140 +2,36 @@
   "name": "bucketeer",
   "version": "0.1.0",
   "description": "Local-first desktop browser for S3-compatible storage (OVHcloud, AWS S3, Scaleway, Wasabi, R2, MinIO): dual-pane transfers, public and signed links. No account, no cloud.",
-  "main": "./out/main/index.js",
   "author": "Christophe Roos",
   "license": "MIT",
   "private": true,
+  "type": "module",
   "homepage": "https://github.com/croos555/bucketeer",
   "repository": {
     "type": "git",
     "url": "https://github.com/croos555/bucketeer.git"
   },
   "scripts": {
-    "dev": "electron-vite dev",
-    "build": "electron-vite build",
-    "start": "electron-vite preview",
+    "dev": "tauri dev",
+    "dev:web": "vite",
+    "build": "vite build",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
-    "dist": "electron-vite build && electron-builder",
-    "dist:mac": "electron-vite build && electron-builder --mac --x64 --arm64",
-    "dist:mac:arm": "electron-vite build && electron-builder --mac --arm64",
-    "dist:win": "electron-vite build && electron-builder --win",
-    "dist:linux": "electron-vite build && electron-builder --linux",
+    "dist": "tauri build",
     "tauri": "tauri",
-    "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build",
-    "tauri:web": "vite --config vite.tauri.config.ts",
-    "tauri:web:build": "vite build --config vite.tauri.config.ts"
-  },
-  "build": {
-    "appId": "dev.bucketeer.app",
-    "productName": "Bucketeer",
-    "directories": {
-      "output": "dist",
-      "buildResources": "build"
-    },
-    "files": [
-      "out/**/*"
-    ],
-    "npmRebuild": false,
-    "asar": true,
-    "mac": {
-      "category": "public.app-category.developer-tools",
-      "artifactName": "${productName}-${version}-${arch}.${ext}",
-      "target": [
-        {
-          "target": "dmg",
-          "arch": [
-            "x64",
-            "arm64"
-          ]
-        },
-        {
-          "target": "zip",
-          "arch": [
-            "x64",
-            "arm64"
-          ]
-        }
-      ],
-      "hardenedRuntime": true
-    },
-    "win": {
-      "target": [
-        {
-          "target": "nsis",
-          "arch": [
-            "x64",
-            "arm64"
-          ]
-        },
-        {
-          "target": "portable",
-          "arch": [
-            "x64"
-          ]
-        }
-      ],
-      "signtoolOptions": {
-        "sign": "./build/sign-win.js",
-        "signingHashAlgorithms": [
-          "sha256"
-        ]
-      }
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true
-    },
-    "portable": {
-      "artifactName": "${productName}-${version}-portable.${ext}"
-    },
-    "linux": {
-      "category": "Network",
-      "maintainer": "Christophe Roos",
-      "target": [
-        {
-          "target": "AppImage",
-          "arch": [
-            "x64",
-            "arm64"
-          ]
-        },
-        {
-          "target": "deb",
-          "arch": [
-            "x64"
-          ]
-        },
-        {
-          "target": "rpm",
-          "arch": [
-            "x64"
-          ]
-        }
-      ]
-    }
+    "test:rust": "cargo test --manifest-path src-tauri/Cargo.toml"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1152.0",
-    "@aws-sdk/lib-storage": "^3.1152.0",
-    "@aws-sdk/s3-request-presigner": "^3.1152.0",
     "@tauri-apps/api": "^2.12.4",
     "@tauri-apps/plugin-clipboard-manager": "^2.5.0",
     "@tauri-apps/plugin-dialog": "^2.8.3",
-    "@tauri-apps/plugin-opener": "^2.7.2",
-    "mime-types": "^3.0.2"
+    "@tauri-apps/plugin-opener": "^2.7.2"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.12.3",
-    "@types/mime-types": "^3.0.1",
     "@types/node": "^26.6.5",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
-    "electron": "^44.9.0",
-    "electron-builder": "^26.15.3",
-    "electron-vite": "^6.0.0",
     "lucide-react": "^1.59.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
@@ -153,7 +49,7 @@
     "ovhcloud",
     "minio",
     "cloudflare-r2",
-    "electron",
+    "tauri",
     "file-manager",
     "cyberduck-alternative"
   ]

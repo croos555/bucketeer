@@ -14,7 +14,7 @@ pub fn app() -> &'static AppHandle {
     APP.get().expect("app handle not set")
 }
 
-// Same channel names as the Electron build, so the renderer adapter stays thin
+// Event names are the ones window.api listens to (src/renderer/src/api.ts)
 pub fn emit<S: Serialize + Clone>(event: &str, payload: S) {
     if let Some(app) = APP.get() {
         let _ = app.emit(event, payload);
@@ -35,7 +35,7 @@ pub fn random_bytes<const N: usize>() -> [u8; N] {
     b
 }
 
-// Errors cross the IPC boundary as plain messages, like Error.message on the Electron side
+// Errors cross the IPC boundary as plain messages, shown as is by the renderer
 #[derive(Debug)]
 pub struct Error(anyhow::Error);
 

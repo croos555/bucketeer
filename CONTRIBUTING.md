@@ -18,10 +18,10 @@ See [docs/development.md](docs/development.md) for the setup and the architectur
 
 Before opening a pull request:
 
-- `npm run typecheck` passes,
+- `npm run typecheck` and `cargo clippy` (in `src-tauri/`) pass,
 - the app builds (`npm run build`) and you tried your change in `npm run dev`, ideally against a real
   S3-compatible service or a local test server (see the development guide),
-- no new native dependency, `npm audit --omit=dev` stays clean,
+- new dependencies (npm or crates) are MIT-compatible, `npm audit --omit=dev` stays clean,
 - commits follow [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`,
   `docs:`…) and explain *why* when it isn't obvious.
 

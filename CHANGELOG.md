@@ -5,6 +5,17 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- Bucketeer now runs on Tauri 2 with a Rust backend (AWS SDK for Rust) instead of Electron: the
+  app is about 10 MB instead of 290 MB and starts faster. Connections and secret keys from 0.1.0
+  are imported automatically on first start.
+- Secret keys are encrypted with AES-256-GCM, with a random key kept in the OS keychain.
+- Packages: dmg (Apple Silicon, Intel), Windows installer and portable exe (x64, ARM64), Linux
+  AppImage, deb and rpm (x64, ARM64). The macOS zip is no longer published.
+
+### Removed
+- Splash screen (the app window opens immediately).
+
 ## [0.1.0] — 2026-10-19
 
 First public release.

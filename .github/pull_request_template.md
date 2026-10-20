@@ -8,7 +8,7 @@
 
 ## Checklist
 
-- [ ] `npm run typecheck` and `npm run build` pass
+- [ ] `npm run typecheck`, `npm run build` and `cargo clippy` (in `src-tauri/`) pass
 - [ ] Tried the change in `npm run dev`
 - [ ] Docs (`README.md`, `docs/`) updated if behavior changed
 - [ ] `CHANGELOG.md` updated under *Unreleased* for user-visible changes

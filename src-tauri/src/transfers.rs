@@ -315,6 +315,7 @@ pub struct Dst {
 }
 
 // Streams an object from one client to another, as multipart when it is larger than one part
+#[allow(clippy::too_many_arguments)]
 async fn stream_copy(src: &Client, s_bucket: &str, s_key: &str, dst: &Client, d_bucket: &str, d_key: &str, size: i64, p: &Progress, acl: Option<ObjectCannedAcl>) -> anyhow::Result<()> {
     let obj = src.get_object().bucket(s_bucket).key(s_key).send().await.map_err(err)?;
     let content_type = obj.content_type().map(String::from);
