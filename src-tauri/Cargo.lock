@@ -801,7 +801,7 @@ dependencies = [
  "aws-sdk-s3",
  "aws-smithy-http-client",
  "aws-smithy-types",
- "base64 0.22.1",
+ "base64 0.23.1",
  "cbc",
  "dirs 6.0.0",
  "futures",
