@@ -100,3 +100,17 @@ build/           icon.svg (source) → icon.png used by electron-builder; splash
   key on release tags (secrets `MAC_CSC_LINK`, `MAC_CSC_KEY_PASSWORD`, `APPLE_API_KEY_BASE64`,
   `APPLE_API_KEY_ID`, `APPLE_API_ISSUER`); `mac.hardenedRuntime` is on, notarization is enabled from
   the workflow with `-c.mac.notarize=true`.
+
+## Tauri build (branch `tauri`, work in progress)
+
+A Tauri 2 build sits next to the Electron one, sharing the renderer:
+- `src-tauri/`: Rust backend. `store.rs` (vault, imports the Electron vault once), `secrets.rs` (AES-256-GCM
+  with a key in the OS keychain), `s3.rs` (aws-sdk-s3, same checksum rule and error messages as the
+  TypeScript version), `transfers.rs` (multipart uploads, streamed downloads/copies, cancel), `local.rs`.
+- `src/renderer/src/tauri-api.ts` implements `window.api` over Tauri commands (Electron channel names
+  in snake_case) and turns OS file drops into an `os-file-drop` DOM event; `main-tauri.tsx` is the entry,
+  `vite.tauri.config.ts` the web build. On Windows OS drops are off (`tauri.windows.conf.json`) to keep
+  HTML5 drag & drop between panes.
+- `npm run tauri:dev`, `npm run tauri:build`. Rust lives in `~/.cargo/bin` (not always on PATH).
+- `cargo test -- --ignored --test-threads=1` in `src-tauri/` runs `s3_tests.rs` against a local
+  SeaweedFS on 127.0.0.1:8333.

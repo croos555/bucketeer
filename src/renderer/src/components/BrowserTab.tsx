@@ -262,6 +262,21 @@ function Pane(props: PaneProps) {
   const [infoKey, setInfoKey] = useState<string | null>(null)
   const { menu, open, close } = useMenu()
 
+  // Tauri build: files dropped from the OS arrive as an "os-file-drop" event (see tauri-api.ts);
+  // a folder row or breadcrumb under the cursor is the destination
+  const paneRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const el = paneRef.current
+    if (!el) return
+    const onDrop = (ev: Event) => {
+      const { paths } = (ev as CustomEvent<{ paths: string[] }>).detail
+      const target = (ev.target as HTMLElement | null)?.closest<HTMLElement>('[data-dir-path]')
+      props.onExternal(paths, target?.dataset.dirPath)
+    }
+    el.addEventListener('os-file-drop', onDrop)
+    return () => el.removeEventListener('os-file-drop', onDrop)
+  })
+
   const conn = loc?.kind === 's3' ? vault?.connections.find((c) => c.id === loc.connectionId) : undefined
   const inBucket = loc?.kind === 's3' && !!loc.bucket
   const ready = !!loc && (loc.kind === 'local' ? !!loc.path : true)
@@ -659,6 +674,7 @@ function Pane(props: PaneProps) {
 
   return (
     <div
+      ref={paneRef}
       className={`pane ${dropTarget ? 'drop' : ''}`}
       onDragOver={(e) => {
         e.preventDefault()
@@ -734,6 +750,7 @@ function Pane(props: PaneProps) {
                 {i > 0 && <ChevronRight size={12} color="var(--text-3)" />}
                 <button
                   className="crumb"
+                  data-dir-path={c.to.kind === 'local' ? c.to.path : c.to.prefix}
                   onClick={() => go(c.to)}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => handleDrop(e, c.to.kind === 'local' ? c.to.path : c.to.prefix)}
@@ -780,6 +797,7 @@ function Pane(props: PaneProps) {
             <div
               key={e.path}
               className={`frow ${showUrls ? 'with-url' : ''} ${selected.has(e.path) ? 'selected' : ''}`}
+              data-dir-path={e.isDir ? e.path : undefined}
               draggable
               onDragStart={(ev) => onDragStart(ev, e)}
               onDragOver={e.isDir ? (ev) => ev.preventDefault() : undefined}

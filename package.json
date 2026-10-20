@@ -20,7 +20,12 @@
     "dist:mac": "electron-vite build && electron-builder --mac --x64 --arm64",
     "dist:mac:arm": "electron-vite build && electron-builder --mac --arm64",
     "dist:win": "electron-vite build && electron-builder --win",
-    "dist:linux": "electron-vite build && electron-builder --linux"
+    "dist:linux": "electron-vite build && electron-builder --linux",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
+    "tauri:web": "vite --config vite.tauri.config.ts",
+    "tauri:web:build": "vite build --config vite.tauri.config.ts"
   },
   "build": {
     "appId": "dev.bucketeer.app",
@@ -115,9 +120,14 @@
     "@aws-sdk/client-s3": "^3.1152.0",
     "@aws-sdk/lib-storage": "^3.1152.0",
     "@aws-sdk/s3-request-presigner": "^3.1152.0",
+    "@tauri-apps/api": "^2.12.4",
+    "@tauri-apps/plugin-clipboard-manager": "^2.5.0",
+    "@tauri-apps/plugin-dialog": "^2.8.3",
+    "@tauri-apps/plugin-opener": "^2.7.2",
     "mime-types": "^3.0.2"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2.12.3",
     "@types/mime-types": "^3.0.1",
     "@types/node": "^26.6.5",
     "@types/react": "^19.3.0",

@@ -1,0 +1,16 @@
+{
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Bucketeer",
+        "width": 1280,
+        "height": 820,
+        "minWidth": 900,
+        "minHeight": 560,
+        "backgroundColor": "#14161d",
+        "dragDropEnabled": false
+      }
+    ]
+  }
+}
