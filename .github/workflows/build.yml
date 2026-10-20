@@ -231,9 +231,10 @@ jobs:
         with:
           path: artifacts
           merge-multiple: true
+      # Linux artifacts keep their appimage/, deb/ and rpm/ folders: attach the files at any depth
       - uses: softprops/action-gh-release@v2
         with:
-          files: artifacts/*
+          files: artifacts/**/*
           draft: true
           # v1.2.3-rc.1 and similar are published as pre-releases
           prerelease: ${{ contains(github.ref_name, '-') }}
