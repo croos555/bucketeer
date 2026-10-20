@@ -1,6 +1,6 @@
 [package]
 name = "bucketeer"
-version = "0.1.0"
+version = "0.2.0"
 description = "Local-first browser for S3-compatible object storage"
 authors = ["Christophe Roos"]
 license = "MIT"

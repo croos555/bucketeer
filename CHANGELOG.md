@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-10-20
+
 ### Changed
 - Bucketeer now runs on Tauri 2 with a Rust backend (AWS SDK for Rust) instead of Electron: the
   app is about 10 MB instead of 290 MB and starts faster. Connections and secret keys from 0.1.0
