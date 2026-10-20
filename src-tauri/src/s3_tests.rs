@@ -113,3 +113,57 @@ async fn s3_end_to_end() {
     s3_delete_bucket(CONN.into(), b.clone()).await.unwrap();
     s3_delete_bucket(CONN.into(), b2.clone()).await.unwrap();
 }
+
+// A minimal forward proxy: accepts connections, counts them and pipes the bytes to the local S3 server,
+// whatever host the request names. The endpoint's host only exists for this proxy, so a request that
+// bypassed the proxy could not resolve it.
+async fn start_proxy() -> (String, std::sync::Arc<std::sync::atomic::AtomicUsize>) {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::Arc;
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    let count = Arc::new(AtomicUsize::new(0));
+    let seen = count.clone();
+    tokio::spawn(async move {
+        while let Ok((mut client, _)) = listener.accept().await {
+            seen.fetch_add(1, Ordering::SeqCst);
+            tokio::spawn(async move {
+                if let Ok(mut server) = tokio::net::TcpStream::connect("127.0.0.1:8333").await {
+                    let _ = tokio::io::copy_bidirectional(&mut client, &mut server).await;
+                }
+            });
+        }
+    });
+    (format!("http://{addr}"), count)
+}
+
+#[tokio::test]
+#[ignore]
+async fn s3_through_manual_proxy() {
+    use std::sync::atomic::Ordering;
+    let (proxy_url, count) = start_proxy().await;
+    let c = json!({ "id": "proxy-conn", "label": "proxied", "provider": "minio",
+                    "endpoint": "http://s3.only-the-proxy-knows.invalid:8333", "region": "us-east-1",
+                    "accessKeyId": "any", "secretAccessKey": "any", "forcePathStyle": true });
+    {
+        let mut st = crate::store::store();
+        st.vault["connections"] = json!([c.clone()]);
+        st.vault["settings"]["proxyMode"] = json!("manual");
+        st.vault["settings"]["proxyUrl"] = json!(proxy_url.trim_start_matches("http://"));
+    }
+    register_client_for_tests("proxy-conn", make_client(&c));
+
+    let b = format!("px-{}", std::process::id());
+    s3_create_bucket("proxy-conn".into(), b.clone()).await.unwrap();
+    s3_mkdir("proxy-conn".into(), b.clone(), "via-proxy/".into()).await.unwrap();
+    let listed = list_all("proxy-conn", &b, "").await.unwrap();
+    assert!(listed.iter().any(|(k, _)| k == "via-proxy/"));
+    s3_delete("proxy-conn".into(), b.clone(), vec!["via-proxy/".into()]).await.unwrap();
+    s3_delete_bucket("proxy-conn".into(), b).await.unwrap();
+    assert!(count.load(Ordering::SeqCst) > 0, "no request went through the proxy");
+
+    // "none" connects directly: the made-up host cannot be resolved
+    crate::store::store().vault["settings"]["proxyMode"] = json!("none");
+    register_client_for_tests("proxy-conn", make_client(&c));
+    assert!(s3_buckets("proxy-conn".into()).await.is_err());
+}

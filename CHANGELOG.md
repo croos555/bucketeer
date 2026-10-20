@@ -5,6 +5,11 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- Proxy support (*Settings → Network*): the system proxy (environment variables, macOS and Windows
+  network settings) by default, a manual proxy with optional authentication and bypass list, or
+  direct connections.
+
 ## [0.2.0] — 2026-10-20
 
 ### Changed

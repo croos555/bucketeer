@@ -10,6 +10,8 @@
   - **Windows**: Credential Manager, tied to your Windows user account,
   - **Linux**: Secret Service (GNOME Keyring, KWallet). Without a keyring, secrets cannot be
     encrypted; Settings shows a warning in that case.
+- The manual proxy's password is encrypted the same way. System proxies are read from the OS or the
+  environment when needed and are not stored.
 - The vault file is written atomically with `0600` permissions.
 
 ## Requests

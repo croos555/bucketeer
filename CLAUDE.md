@@ -63,7 +63,8 @@ src/renderer/src  api.ts (window.api over Tauri invoke/listen, OS file drops →
                   dual pane + bucket list + transfers, ObjectInfoPanel, ConnectionEditor, icons, ui)
 src-tauri/src/    lib.rs (plugins, commands), store.rs (vault), secrets.rs (AES-256-GCM, key in keychain),
                   s3.rs (client cache, operations, errors, ACLs, presign), transfers.rs (upload/download/copy,
-                  progress, cancel), local.rs (local files), util.rs (emit, Error, bail!), s3_tests.rs
+                  progress, cancel), local.rs (local files), proxy.rs (system/manual/none proxy → SDK + reqwest),
+                  util.rs (emit, Error, bail!), s3_tests.rs
 src-tauri/        tauri.conf.json (+ tauri.windows.conf.json), capabilities/, icons/
 build/            icon.svg (source) → icon.png → src-tauri/icons; sign-win.js (Windows signCommand, CI only)
 ```
@@ -75,7 +76,10 @@ build/            icon.svg (source) → icon.png → src-tauri/icons; sign-win.j
   bookmarks + settings. `secretAccessKey` is encrypted (`secret_fields`). New settings need a default
   in `default_settings`. The Electron 0.1.0 vault (`<config>/bucketeer/vault.json`, `enc:v1:` secrets
   from "Bucketeer Safe Storage") is imported once; keep that path working.
-- S3 clients are cached per connection and dropped when the connection changes (`s3::forget_client`).
+- S3 clients are cached per connection and dropped when the connection changes (`s3::forget_client`)
+  or a `proxy*` setting changes (`s3::forget_all_clients`). Every client gets its HTTP client from
+  `proxy::http_client()` and reqwest uses `proxy::reqwest_builder()`: never build one without them.
+  Secret settings (`proxyPassword`) are encrypted through `SECRET_SETTINGS` in store.rs.
 - Non-AWS providers: `RequestChecksumCalculation` / `ResponseChecksumValidation` = `WhenRequired`
   (the SDK's default CRC32 checksums break many S3-compatible stores). Uploads pass `ContentLength`
   so small files are plain PUTs; failed multipart uploads are aborted.

@@ -17,6 +17,12 @@ import type {
   Vault
 } from '@shared/types'
 
+export interface ProxyInfo {
+  url: string
+  source: 'manual' | 'environment' | 'system'
+  noProxy: string
+}
+
 function on<T>(event: string, cb: (payload: T) => void): () => void {
   const unlisten = listen<T>(event, (e) => cb(e.payload))
   return () => void unlisten.then((f) => f())
@@ -86,6 +92,8 @@ const api = {
       return res ? (Array.isArray(res) ? res : [res]) : []
     }
   },
+
+  proxyStatus: () => invoke<{ current: ProxyInfo | null; system: ProxyInfo | null }>('proxy_status'),
 
   copyText: (text: string) => writeText(text)
 }

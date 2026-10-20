@@ -2,6 +2,7 @@
 // Commands and events used by window.api (src/renderer/src/api.ts).
 
 mod local;
+mod proxy;
 mod s3;
 mod secrets;
 mod store;
@@ -40,6 +41,7 @@ pub fn run() {
             s3::s3_set_public,
             s3::s3_check_url,
             s3::s3_presign,
+            proxy::proxy_status,
             transfers::transfer_upload,
             transfers::transfer_download,
             transfers::transfer_copy,

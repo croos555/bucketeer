@@ -39,6 +39,7 @@ tokio = { version = "1.54.0", features = ["full"] }
 trash = "5"
 uuid = { version = "1.28.0", features = ["v4"] }
 tauri-plugin-clipboard-manager = "2"
+aws-smithy-http-client = { version = "1.5", features = ["rustls-aws-lc"] }
 
 [profile.release]
 codegen-units = 1
@@ -46,3 +47,9 @@ lto = true
 opt-level = "s"
 panic = "abort"
 strip = true
+
+[target.'cfg(target_os = "macos")'.dependencies]
+system-configuration = "0.7"
+
+[target."cfg(windows)".dependencies]
+winreg = "0.56"

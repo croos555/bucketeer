@@ -1,14 +1,90 @@
 import { useEffect, useState } from 'react'
+import { Globe, Lock, ShieldOff, User } from 'lucide-react'
 import { useStore } from '../store'
+import type { ProxyInfo } from '../api'
 import { Field, Segmented, Switch } from '../components/ui'
 
 const BACKEND: Record<string, string> = {
-  keychain: 'the macOS Keychain',
-  dpapi: 'Windows DPAPI (tied to your Windows account)',
-  gnome_libsecret: 'GNOME Keyring (libsecret)',
-  kwallet: 'KWallet',
-  kwallet5: 'KWallet',
-  kwallet6: 'KWallet'
+  keychain: 'a key kept in the macOS Keychain',
+  'credential-manager': 'a key kept in the Windows Credential Manager',
+  'secret-service': 'a key kept in the system keyring (Secret Service)'
+}
+
+const SOURCE: Record<ProxyInfo['source'], string> = {
+  environment: 'from the HTTPS_PROXY / HTTP_PROXY environment variables',
+  system: 'from the system network settings',
+  manual: 'manual'
+}
+
+function ProxySection() {
+  const { vault, saveSettings } = useStore()
+  const [status, setStatus] = useState<{ current: ProxyInfo | null; system: ProxyInfo | null } | null>(null)
+  const s = vault!.settings
+  const mode = s.proxyMode || 'system'
+  useEffect(() => {
+    window.api.proxyStatus().then(setStatus)
+  }, [mode, s.proxyUrl, s.proxyNoProxy])
+  return (
+    <>
+      <div className="section-title">Network</div>
+      <div className="psection">
+        <label className="row">
+          <span>Proxy</span>
+          <div style={{ width: 260 }}>
+            <Segmented
+              value={mode}
+              onChange={(v) => saveSettings({ proxyMode: v })}
+              options={[
+                { value: 'system', label: 'System' },
+                { value: 'manual', label: 'Manual' },
+                { value: 'none', label: 'None' }
+              ]}
+            />
+          </div>
+        </label>
+        {mode === 'manual' && (
+          <>
+            <Field
+              icon={Globe}
+              value={s.proxyUrl}
+              onChange={(v) => saveSettings({ proxyUrl: v })}
+              placeholder="Proxy URL (e.g. http://proxy.example.com:3128)"
+            />
+            <div className="row">
+              <div className="grow">
+                <Field icon={User} value={s.proxyUser} onChange={(v) => saveSettings({ proxyUser: v })} placeholder="User (optional)" />
+              </div>
+              <div className="grow">
+                <Field
+                  icon={Lock}
+                  type="password"
+                  value={s.proxyPassword}
+                  onChange={(v) => saveSettings({ proxyPassword: v })}
+                  placeholder="Password"
+                />
+              </div>
+            </div>
+            <Field
+              icon={ShieldOff}
+              value={s.proxyNoProxy}
+              onChange={(v) => saveSettings({ proxyNoProxy: v })}
+              placeholder="Bypass for (e.g. .corp.example.com, 10.0.0.0/8)"
+            />
+          </>
+        )}
+        <p className="hint">
+          {mode === 'none'
+            ? 'Bucketeer always connects directly.'
+            : status?.current
+              ? <>Requests go through <code>{status.current.url}</code> ({SOURCE[status.current.source]}).</>
+              : mode === 'manual'
+                ? 'Enter the proxy URL.'
+                : 'No proxy is configured on this computer: Bucketeer connects directly.'}{' '}
+          Local addresses (localhost, 127.0.0.1) never use the proxy.
+        </p>
+      </div>
+    </>
+  )
 }
 
 export default function SettingsView() {
@@ -73,6 +149,8 @@ export default function SettingsView() {
             <p className="hint">Large files are uploaded in parts (minimum 5 MB). Bigger parts and more parallelism go faster on good connections.</p>
           </div>
 
+          <ProxySection />
+
           <div className="section-title">General</div>
           <div className="psection">
             <label className="row">
@@ -82,11 +160,11 @@ export default function SettingsView() {
             <p className="hint">
               Everything is stored locally on this computer.{' '}
               {storage &&
-                (storage.encrypted && storage.backend !== 'basic_text' ? (
-                  <>Secret keys are encrypted with {BACKEND[storage.backend] || storage.backend}.</>
+                (storage.encrypted ? (
+                  <>Secret keys and the proxy password are encrypted with {BACKEND[storage.backend] || storage.backend}.</>
                 ) : (
                   <span style={{ color: 'var(--danger)' }}>
-                    No system keyring is available: secret keys are only obfuscated on disk.
+                    No system keyring is available: secret keys are stored unencrypted on disk.
                   </span>
                 ))}
             </p>

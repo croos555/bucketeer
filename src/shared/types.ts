@@ -51,6 +51,14 @@ export interface Settings {
   confirmDelete: boolean
   showHidden: boolean
   keepRunningInBackground: boolean
+  // HTTP(S) proxy for S3 requests: the OS/environment setting, a manual one, or direct connections
+  proxyMode: 'system' | 'manual' | 'none'
+  proxyUrl?: string
+  proxyUser?: string
+  // Encrypted at rest like the secret keys
+  proxyPassword?: string
+  // Comma-separated hosts, .domains or CIDR ranges that bypass the proxy
+  proxyNoProxy?: string
 }
 
 export interface Vault {
@@ -69,7 +77,8 @@ export const DEFAULT_SETTINGS: Settings = {
   concurrency: 4,
   confirmDelete: true,
   showHidden: true,
-  keepRunningInBackground: false
+  keepRunningInBackground: false,
+  proxyMode: 'system'
 }
 
 // ---- Browsing ----

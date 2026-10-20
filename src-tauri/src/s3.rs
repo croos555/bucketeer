@@ -33,6 +33,11 @@ pub fn forget_client(id: &str) {
     CLIENTS.lock().unwrap().remove(id);
 }
 
+// Proxy settings changed: every client is rebuilt on next use
+pub fn forget_all_clients() {
+    CLIENTS.lock().unwrap().clear();
+}
+
 fn s(v: &Value, k: &str) -> String {
     v[k].as_str().unwrap_or_default().trim().to_string()
 }
@@ -44,7 +49,8 @@ pub fn make_client(c: &Value) -> Client {
         .behavior_version(BehaviorVersion::latest())
         .region(Region::new(if region.is_empty() { "us-east-1".to_string() } else { region }))
         .credentials_provider(Credentials::new(s(c, "accessKeyId"), s(c, "secretAccessKey"), None, None, "bucketeer"))
-        .force_path_style(c["forcePathStyle"].as_bool().unwrap_or(false));
+        .force_path_style(c["forcePathStyle"].as_bool().unwrap_or(false))
+        .http_client(crate::proxy::http_client());
     if !endpoint.is_empty() {
         b = b.endpoint_url(endpoint);
     }
@@ -390,7 +396,7 @@ pub async fn s3_set_public(id: String, bucket: String, keys: Vec<String>, on: bo
 // Ask the public URL itself, without credentials, whether it answers
 #[tauri::command]
 pub async fn s3_check_url(url: String) -> Value {
-    let client = reqwest::Client::builder().timeout(Duration::from_secs(15)).build();
+    let client = crate::proxy::reqwest_builder().timeout(Duration::from_secs(15)).build();
     match client {
         Ok(c) => match c.head(&url).send().await {
             Ok(r) => json!({ "ok": r.status().is_success(), "status": r.status().as_u16() }),

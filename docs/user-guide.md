@@ -66,6 +66,21 @@ confirmed unless disabled in Settings), refresh.
 Appearance (system, light, dark), hidden files, delete confirmation, multipart part size and
 parallelism, and whether the app keeps running when its window is closed.
 
+### Proxy
+
+*Settings → Network → Proxy* applies to every S3 request and to the public URL check:
+
+- **System** (default): the `HTTPS_PROXY` / `HTTP_PROXY` / `ALL_PROXY` and `NO_PROXY` environment
+  variables if set, otherwise the operating system's proxy (macOS network settings, Windows Internet
+  settings, with their exceptions). On Linux only the environment variables are read. The proxy in
+  use is shown below the setting.
+- **Manual**: a proxy URL (`http://host:port`, or `https://` for a TLS proxy), an optional user and
+  password, and the hosts that bypass it (`host`, `.domain`, `10.0.0.0/8`, comma-separated).
+- **None**: always connect directly.
+
+Local addresses (`localhost`, `127.0.0.1`, `::1`) never use the proxy. Automatic configuration
+scripts (PAC) are not supported: enter the proxy manually.
+
 ## Where data is stored
 
 `vault.json` in the application data folder: `~/Library/Application Support/dev.bucketeer.app` (macOS),

@@ -28,7 +28,8 @@ fn default_settings() -> Value {
         "concurrency": 4,
         "confirmDelete": true,
         "showHidden": true,
-        "keepRunningInBackground": false
+        "keepRunningInBackground": false,
+        "proxyMode": "system"
     })
 }
 
@@ -40,8 +41,16 @@ fn empty_vault() -> Value {
     v
 }
 
+// Secret settings (the manual proxy's password)
+const SECRET_SETTINGS: [&str; 1] = ["proxyPassword"];
+
 fn map_secrets(vault: &Value, f: fn(&str) -> String) -> Value {
     let mut out = vault.clone();
+    for field in SECRET_SETTINGS {
+        if let Some(s) = out["settings"].get(field).and_then(Value::as_str).filter(|s| !s.is_empty()) {
+            out["settings"][field] = Value::String(f(s));
+        }
+    }
     for col in COLLECTIONS {
         let fields = secret_fields(col);
         if fields.is_empty() {
@@ -190,10 +199,15 @@ impl Store {
     }
 
     pub fn update_settings(&mut self, patch: Value) -> Value {
-        for (k, v) in patch.as_object().cloned().unwrap_or_default() {
+        let patch = patch.as_object().cloned().unwrap_or_default();
+        let proxy_changed = patch.keys().any(|k| k.starts_with("proxy"));
+        for (k, v) in patch {
             self.vault["settings"][k] = v;
         }
         self.save();
+        if proxy_changed {
+            crate::s3::forget_all_clients();
+        }
         self.vault["settings"].clone()
     }
 
